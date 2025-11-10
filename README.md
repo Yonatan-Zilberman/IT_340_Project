@@ -94,12 +94,9 @@ Then open `http://localhost:8000` in your browser.
 
 ## Future Milestones
 
-- **Milestone 2**: Backend integration and database setup
-- **Milestone 3**: User authentication and session management
-- **Milestone 4**: Event listing and search functionality
-- **Milestone 5**: Ticket purchasing and checkout process
-- **Milestone 6**: Presale code system implementation
-- **Milestone 7**: Organizer dashboard for event management
+- **Milestone 2**: Authentication Completion
+- **Milestone 3**: Full Website Functionality
+
 
 ## Team Information
 
