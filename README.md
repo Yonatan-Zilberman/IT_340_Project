@@ -113,6 +113,5 @@ Then open `http://localhost:8000` in your browser.
 
 ---
 
-**Last Updated**: 2024  
 **Status**: Milestone 1 Complete ✅
 
