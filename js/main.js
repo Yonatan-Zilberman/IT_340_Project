@@ -3,11 +3,23 @@
  * Handles form validation, interactivity, and user interactions
  */
 
+const API_BASE_URL = document.body?.dataset?.apiBase || 'http://localhost:3000/api';
+const DASHBOARD_REDIRECT = 'index.html';
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeLoginPage();
+    initializeRegisterPage();
     initializePasswordToggle();
     initializeFormValidation();
+    initializePresaleCode();
+    initializeSmoothScroll();
+    initializeForgotPassword();
+    
+    // Initialize scroll animations if supported
+    if ('IntersectionObserver' in window) {
+        animateOnScroll();
+    }
 });
 
 /**
@@ -22,45 +34,175 @@ function initializeLoginPage() {
 }
 
 /**
+ * Initialize registration form functionality
+ */
+function initializeRegisterPage() {
+    const registerForm = document.getElementById('registerForm');
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', handleRegisterSubmit);
+    }
+}
+
+/**
  * Handle login form submission
  */
-function handleLoginSubmit(event) {
+async function handleLoginSubmit(event) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     const form = event.target;
-    
-    // Check if form is valid
-    if (form.checkValidity()) {
-        // Get form data
-        const formData = {
-            email: document.getElementById('email').value,
-            password: document.getElementById('password').value,
-            rememberMe: document.getElementById('rememberMe').checked
-        };
-        
-        // Show loading state
-        const submitButton = form.querySelector('button[type="submit"]');
-        const originalText = submitButton.innerHTML;
-        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';
-        submitButton.disabled = true;
-        
-        // Simulate login process (replace with actual API call in future milestones)
-        setTimeout(() => {
-            // For now, just show success message
-            alert('Login functionality will be implemented in future milestones.\n\nEmail: ' + formData.email + '\nRemember Me: ' + formData.rememberMe);
-            
-            // Reset button
-            submitButton.innerHTML = originalText;
-            submitButton.disabled = false;
-            
-            // In production, redirect to dashboard or home page
-            // window.location.href = 'dashboard.html';
-        }, 1000);
-    } else {
-        // Form is invalid, show validation messages
+
+    if (!form.checkValidity()) {
         form.classList.add('was-validated');
+        return;
     }
+
+    const payload = {
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+    };
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    const resetLoading = setLoadingState(submitButton, 'Signing in...');
+
+    try {
+        const data = await sendAuthRequest('/auth/login', payload);
+        handleAuthSuccess(data, 'Welcome back! Redirecting you now...');
+        form.reset();
+        form.classList.remove('was-validated');
+
+        setTimeout(() => {
+            window.location.href = DASHBOARD_REDIRECT;
+        }, 1200);
+    } catch (error) {
+        handleAuthError(error);
+    } finally {
+        resetLoading();
+    }
+}
+
+/**
+ * Handle register form submission
+ */
+async function handleRegisterSubmit(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const form = event.target;
+
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+    }
+
+    const payload = {
+        name: document.getElementById('registerName').value.trim(),
+        email: document.getElementById('registerEmail').value.trim(),
+        password: document.getElementById('registerPassword').value,
+    };
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    const resetLoading = setLoadingState(submitButton, 'Creating account...');
+
+    try {
+        const data = await sendAuthRequest('/auth/register', payload);
+        handleAuthSuccess(data, 'Account created! You are now signed in.');
+        form.reset();
+        form.classList.remove('was-validated');
+
+        setTimeout(() => {
+            window.location.href = DASHBOARD_REDIRECT;
+        }, 1200);
+    } catch (error) {
+        handleAuthError(error);
+    } finally {
+        resetLoading();
+    }
+}
+
+/**
+ * Send POST request to authentication endpoint
+ */
+async function sendAuthRequest(endpoint, payload) {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    let data;
+    try {
+        data = await response.json();
+    } catch (err) {
+        data = null;
+    }
+
+    if (!response.ok) {
+        throw new Error(data?.message || 'Authentication failed.');
+    }
+
+    return data;
+}
+
+/**
+ * Display success messages and persist token/user details
+ */
+function handleAuthSuccess(data, message) {
+    if (data?.token) {
+        localStorage.setItem('eventease_token', data.token);
+    }
+
+    if (data?.user) {
+        localStorage.setItem('eventease_user', JSON.stringify(data.user));
+    }
+
+    renderAlert('success', message || data?.message || 'Success!');
+}
+
+/**
+ * Surface auth errors to the user
+ */
+function handleAuthError(error) {
+    const message = error?.message || 'Something went wrong. Please try again.';
+    renderAlert('danger', message);
+}
+
+/**
+ * Toggle button loading state and return cleanup fn
+ */
+function setLoadingState(button, loadingText) {
+    if (!button) {
+        return () => {};
+    }
+
+    const originalHtml = button.innerHTML;
+    const originalDisabled = button.disabled;
+
+    button.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${loadingText}`;
+    button.disabled = true;
+
+    return () => {
+        button.innerHTML = originalHtml;
+        button.disabled = originalDisabled;
+    };
+}
+
+/**
+ * Render bootstrap alerts inside login card
+ */
+function renderAlert(type, message) {
+    const container = document.getElementById('authAlertContainer');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
 }
 
 /**
@@ -92,8 +234,7 @@ function initializePasswordToggle() {
  * Initialize form validation
  */
 function initializeFormValidation() {
-    // Get all forms with validation
-    const forms = document.querySelectorAll('.needs-validation, #loginForm');
+    const forms = document.querySelectorAll('.needs-validation');
     
     forms.forEach(form => {
         form.addEventListener('submit', function(event) {
@@ -108,60 +249,76 @@ function initializeFormValidation() {
 }
 
 /**
- * Handle presale code application
+ * Initialize presale code functionality
  */
-function handlePresaleCode() {
-    const presaleCodeInput = document.getElementById('presaleCode');
-    
-    if (presaleCodeInput) {
-        const code = presaleCodeInput.value.trim();
-        
-        if (code) {
-            // Presale code validation will be implemented in future milestones
-            alert('Presale code functionality will be implemented in future milestones.\n\nCode: ' + code);
-        } else {
-            alert('Please enter a presale code.');
-        }
-    }
-}
-
-// Add event listener for presale code button if it exists
-document.addEventListener('DOMContentLoaded', function() {
+function initializePresaleCode() {
     const presaleCodeButton = document.querySelector('#presaleCode')?.parentElement?.querySelector('button');
-    
-    if (presaleCodeButton) {
-        presaleCodeButton.addEventListener('click', handlePresaleCode);
-    }
-    
-    // Also handle Enter key on presale code input
     const presaleCodeInput = document.getElementById('presaleCode');
-    if (presaleCodeInput) {
+    
+    if (presaleCodeButton && presaleCodeInput) {
+        presaleCodeButton.addEventListener('click', handlePresaleCode);
+        
         presaleCodeInput.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 handlePresaleCode();
             }
         });
     }
-});
+}
 
 /**
- * Smooth scroll for anchor links
+ * Handle presale code application
  */
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function(e) {
-        const href = this.getAttribute('href');
-        if (href !== '#' && href.length > 1) {
+function handlePresaleCode() {
+    const presaleCodeInput = document.getElementById('presaleCode');
+    
+    if (!presaleCodeInput) return;
+    
+    const code = presaleCodeInput.value.trim();
+    
+    if (!code) {
+        renderAlert('warning', 'Please enter a presale code.');
+        return;
+    }
+    
+    // Presale code validation will be implemented in future milestones
+    renderAlert('info', 'Presale code functionality will be implemented in future milestones. Code: ' + code);
+}
+
+/**
+ * Initialize forgot password link
+ */
+function initializeForgotPassword() {
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', function(e) {
             e.preventDefault();
-            const target = document.querySelector(href);
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
+            renderAlert('info', 'Password reset functionality will be available in a future update.');
+        });
+    }
+}
+
+/**
+ * Initialize smooth scroll for anchor links
+ */
+function initializeSmoothScroll() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href !== '#' && href.length > 1) {
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
             }
-        }
+        });
     });
-});
+}
 
 /**
  * Add animation on scroll (optional enhancement)
@@ -188,8 +345,4 @@ function animateOnScroll() {
     });
 }
 
-// Initialize scroll animations if supported
-if ('IntersectionObserver' in window) {
-    document.addEventListener('DOMContentLoaded', animateOnScroll);
-}
 

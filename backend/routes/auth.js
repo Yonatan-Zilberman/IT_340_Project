@@ -1,8 +1,17 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'change-me';
+
+/**
+ * Create a signed JWT with the minimum amount of user data.
+ */
+function createToken(userId) {
+  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: '1h' });
+}
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -31,12 +40,57 @@ router.post('/register', async (req, res) => {
       passwordHash,
     });
 
-    await newUser.save();
+    const savedUser = await newUser.save();
+    const token = createToken(savedUser._id.toString());
 
     // 5) Send success response (no password included)
-    res.status(201).json({ message: 'User registered successfully.' });
+    res.status(201).json({
+      message: 'User registered successfully.',
+      user: {
+        id: savedUser._id,
+        name: savedUser.name,
+        email: savedUser.email,
+      },
+      token,
+    });
   } catch (err) {
     console.error('Register error:', err.message);
+    res.status(500).json({ message: 'Server error. Please try again later.' });
+  }
+});
+
+// POST /api/auth/login
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required.' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials.' });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: 'Invalid credentials.' });
+    }
+
+    const token = createToken(user._id.toString());
+
+    res.json({
+      message: 'Login successful.',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      token,
+    });
+  } catch (err) {
+    console.error('Login error:', err.message);
     res.status(500).json({ message: 'Server error. Please try again later.' });
   }
 });
