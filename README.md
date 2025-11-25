@@ -1,202 +1,117 @@
-EventEase – Event Ticket Marketplace
-Project Overview
+# EventEase - Event Ticket Marketplace
 
-EventEase is a full-stack event ticket marketplace enabling users to browse events, register accounts, log in, and securely manage ticket access. The platform replicates core Ticketmaster-style functionality, including user authentication, presale access, and event browsing.
+## Project Overview
 
-Project Value
+EventEase is an e-commerce website that allows users to browse, purchase, and manage event tickets — from concerts and sports games to theater shows. The site replicates key Ticketmaster features such as presale access, exclusive code entry, and general ticket sales.
 
-Streamlined ticket discovery and purchasing
+## Project Value
 
-Secure authentication system protecting user accounts
+- **Streamlining event discovery and ticket purchasing** in one place
+- **Giving fans an edge** with verified presale access
+- **Providing organizers** with data-driven ticket management tools
+- **Preventing fraud** through secure digital ticket verification
 
-Support for presale code usage
+## Milestone 1: Front End Completion
 
-Future support for event management, user dashboards, and digital ticketing
+This milestone includes:
+- ✅ Basic website layout with navigation, hero section, features, and footer
+- ✅ Login page with form validation and presale code entry
+- ✅ Responsive design that works on desktop, tablet, and mobile devices
+- ✅ Modern, clean UI with ticket/event theme
 
-Milestone 1: Front-End Completion ✅
+## Project Structure
 
-This milestone included:
-
-Responsive homepage (index.html)
-
-Login page (login.html) with UI validation
-
-Clean layout for hero, features, categories, and footer
-
-Core UI/UX foundation for authentication
-
-Milestone 1 is fully complete.
-
-Milestone 2: Authentication Completion (In Progress)
-
-This milestone introduces backend integration and real user authentication.
-
-✔ Completed So Far
-
-Express.js backend server created
-
-MongoDB connection established
-
-User model created (name, email, passwordHash)
-
-Registration route (POST /api/auth/register) implemented
-
-Registration tested using Hoppscotch + database verification
-
-Port and server conflicts resolved
-
-❗ Still To Complete
-
-Login route (POST /api/auth/login)
-
-Frontend integration: login form sending data to backend
-
-Dashboard page + redirect after successful login
-
-Final testing and GitHub commit
-
-Milestone 2 is approximately 60% complete.
-
-Project Structure
+```
 IT_340_Project/
-├── index.html                    # Homepage  
-├── login.html                    # Login page  
+├── index.html              # Homepage with main layout
+├── login.html              # Login page
 ├── css/
-│   └── styles.css                # Styling  
+│   └── styles.css          # Custom stylesheet
 ├── js/
-│   └── main.js                   # Frontend interactivity  
-├── backend/                      # NEW – Backend code (Milestone 2)
-│   ├── server.js                 # Express backend server  
-│   ├── models/
-│   │   └── User.js               # Mongoose User model  
-│   ├── routes/
-│   │   └── auth.js               # Authentication routes  
-│   ├── package.json              # Backend dependencies  
-│   └── .env                      # Environment variables (Mongo URI, Port)  
-└── README.md
+│   └── main.js             # JavaScript for interactivity
+├── assets/
+│   └── images/             # Image assets (placeholder)
+└── README.md               # This file
+```
 
-Technologies Used
-Front-End
+## Technologies Used
 
-HTML5
+- **HTML5** - Semantic markup
+- **CSS3** - Custom styling with CSS variables
+- **JavaScript (ES6+)** - Form handling and interactivity
+- **Bootstrap 5** - Responsive framework (via CDN)
+- **Bootstrap Icons** - Icon library (via CDN)
 
-CSS3 with modern responsive design
+## Features Implemented
 
-JavaScript (ES6+)
+### Homepage (index.html)
+- Fixed navigation bar with responsive menu
+- Hero section with call-to-action buttons
+- Features section highlighting key benefits
+- Event categories preview (Concerts, Sports, Theater)
+- Footer with project information
 
-Bootstrap 5 + Bootstrap Icons
+### Login Page (login.html)
+- User-friendly login form with email and password
+- Password visibility toggle
+- Form validation with visual feedback
+- "Remember me" checkbox
+- Presale code entry section
+- Link to registration (placeholder for future)
 
-Back-End (Milestone 2)
+## Cross-Platform Compatibility
 
-Node.js
+This project is designed to work on both **Windows** and **Linux** systems. All dependencies are loaded via CDN, so no local installation is required. Simply open the HTML files in a web browser.
 
-Express.js
+## How to Run
 
-MongoDB (local instance)
+1. **Open the project folder** in your file system
+2. **Open `index.html`** in any modern web browser (Chrome, Firefox, Edge, Safari)
+3. **Navigate to the login page** by clicking the "Login" button in the navigation
 
-Mongoose (ODM)
+### Local Development Server (Optional)
 
-bcryptjs (password hashing)
+For a better development experience, you can use a local server:
 
-CORS middleware
+**Python 3:**
+```bash
+python -m http.server 8000
+```
 
-dotenv for environment config
+**Node.js (with http-server):**
+```bash
+npx http-server -p 8000
+```
 
-Features Implemented
-Front-End (Milestone 1)
+Then open `http://localhost:8000` in your browser.
 
-Responsive homepage with hero section and features
+## Browser Compatibility
 
-Event categories preview (concerts, sports, theater)
+- Chrome (latest)
+- Firefox (latest)
+- Edge (latest)
+- Safari (latest)
 
-Login page with:
+## Future Milestones
 
-Email + password input
-
-Password visibility toggle
-
-Presale code field
-
-Frontend-only validation (upgraded in Milestone 2)
-
-Back-End (Milestone 2)
-
-Express.js API server
-
-MongoDB user storage
-
-Registration endpoint with:
-
-Duplicate account protection
-
-Secure password hashing
-
-Backend testable via Hoppscotch and curl
-
-Login and full frontend integration coming next.
-
-How to Run the Project
-Front-End
-cd IT_340_Project
-python3 -m http.server 8000
+- **Milestone 2**: Authentication Completion
+- **Milestone 3**: Full Website Functionality
 
 
-Visit:
+## Team Information
 
-http://localhost:8000
+**Course**: IT 340  
+**Project**: EventEase - Event Ticket Marketplace  
+**Milestone**: 1 - Front End Completion
 
-Back-End
-cd IT_340_Project/backend
-node server.js
+## Notes
 
+- All forms currently show alerts for demonstration purposes
+- Actual backend integration will be implemented in future milestones
+- The design is fully responsive and mobile-friendly
+- All styling uses modern CSS with smooth transitions and animations
 
-Visit:
+---
 
-http://localhost:5000/
+**Status**: Milestone 1 Complete ✅
 
-
-Test in Hoppscotch:
-
-POST http://localhost:5000/api/auth/register
-
-Milestone Roadmap
-Milestone 1 – Front-End Completion
-
-✔ Completed
-
-Milestone 2 – Authentication Completion
-
-🟦 In Progress
-
-Backend routes
-
-Login page integration
-
-User dashboard
-
-Milestone 3 – Full Website Functionality
-
-🔲
-
-Event listings
-
-Ticket pages
-
-User accounts and saved events
-
-Full feature set
-
-Team Information
-
-Course: IT 340
-Project: EventEase – Event Ticket Marketplace
-Milestone: 2 – Authentication Completion
-Status: In Progress
-
-Notes
-
-Backend features now functional and testable.
-
-Frontend will integrate with backend in the next step.
-
-Project is fully responsive and works on both Windows and Linux.
