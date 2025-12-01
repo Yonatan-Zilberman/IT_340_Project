@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePresaleCode();
     initializeSmoothScroll();
     initializeForgotPassword();
+    initializePasswordStrength(); // <-- added for password meter
     
     // Initialize scroll animations if supported
     if ('IntersectionObserver' in window) {
@@ -344,5 +345,55 @@ function animateOnScroll() {
         observer.observe(element);
     });
 }
+/**
+ * Initialize enhanced password strength meter for registration
+ */
+function initializePasswordStrength() {
+    const passwordInput = document.getElementById('registerPassword');
+    const strengthDisplay = document.getElementById('password-strength');
 
+    if (!passwordInput || !strengthDisplay) return;
 
+    passwordInput.addEventListener('input', () => {
+        const value = passwordInput.value;
+        let strengthScore = 0;
+
+        // Criteria checks
+        if (value.length >= 8) strengthScore++;          // Minimum length
+        if (/[A-Z]/.test(value)) strengthScore++;        // Uppercase
+        if (/[a-z]/.test(value)) strengthScore++;        // Lowercase
+        if (/[0-9]/.test(value)) strengthScore++;        // Number
+        if (/[\W_]/.test(value)) strengthScore++;        // Special character
+
+        // Map score to strength label and color
+        let strengthText = '';
+        let color = '';
+
+        switch (strengthScore) {
+            case 0:
+            case 1:
+                strengthText = 'Very Weak';
+                color = 'red';
+                break;
+            case 2:
+                strengthText = 'Weak';
+                color = 'orange';
+                break;
+            case 3:
+                strengthText = 'Moderate';
+                color = 'goldenrod';
+                break;
+            case 4:
+                strengthText = 'Strong';
+                color = 'green';
+                break;
+            case 5:
+                strengthText = 'Very Strong';
+                color = 'darkgreen';
+                break;
+        }
+
+        strengthDisplay.textContent = 'Password strength: ' + strengthText;
+        strengthDisplay.style.color = color;
+    });
+}
