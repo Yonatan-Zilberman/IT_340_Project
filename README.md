@@ -30,7 +30,7 @@ This milestone includes:
 - ✅ JWT token-based session management
 - ✅ CORS configuration for cross-origin requests
 - ✅ Environment variable configuration (.env)
-
+- ✅ Password strength meter added to registration form
 ## Project Structure
 
 ```
@@ -93,7 +93,7 @@ IT_340_Project/
 - Forgot password link (placeholder)
 - Real-time API integration with backend
 - Success/error alerts using Bootstrap
-
+- Password strength meter that updates as users type
 ### Backend API
 - **POST /api/auth/register** - User registration endpoint
 - **POST /api/auth/login** - User authentication endpoint
