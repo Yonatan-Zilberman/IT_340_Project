@@ -4,7 +4,7 @@
  */
 
 const API_BASE_URL = document.body?.dataset?.apiBase || 'http://localhost:3000/api';
-const DASHBOARD_REDIRECT = 'index.html';
+const DASHBOARD_REDIRECT = 'dashboard.html';
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePresaleCode();
     initializeSmoothScroll();
     initializeForgotPassword();
+    initializePasswordStrength(); // <-- added for password meter
     
     // Initialize scroll animations if supported
     if ('IntersectionObserver' in window) {
@@ -73,8 +74,13 @@ async function handleLoginSubmit(event) {
         form.classList.remove('was-validated');
 
         setTimeout(() => {
-            window.location.href = DASHBOARD_REDIRECT;
-        }, 1200);
+   	    const params = new URLSearchParams(window.location.search);
+            const returnUrl = params.get('returnUrl');
+
+            // If ?returnUrl=... exists, go there; otherwise go to dashboard.html
+    	    window.location.href = returnUrl || DASHBOARD_REDIRECT;
+	}, 1200);
+
     } catch (error) {
         handleAuthError(error);
     } finally {
@@ -112,8 +118,12 @@ async function handleRegisterSubmit(event) {
         form.classList.remove('was-validated');
 
         setTimeout(() => {
-            window.location.href = DASHBOARD_REDIRECT;
+            const params = new URLSearchParams(window.location.search);
+            const returnUrl = params.get('returnUrl');
+
+            window.location.href = returnUrl || DASHBOARD_REDIRECT;
         }, 1200);
+
     } catch (error) {
         handleAuthError(error);
     } finally {
@@ -344,5 +354,55 @@ function animateOnScroll() {
         observer.observe(element);
     });
 }
+/**
+ * Initialize enhanced password strength meter for registration
+ */
+function initializePasswordStrength() {
+    const passwordInput = document.getElementById('registerPassword');
+    const strengthDisplay = document.getElementById('password-strength');
 
+    if (!passwordInput || !strengthDisplay) return;
 
+    passwordInput.addEventListener('input', () => {
+        const value = passwordInput.value;
+        let strengthScore = 0;
+
+        // Criteria checks
+        if (value.length >= 8) strengthScore++;          // Minimum length
+        if (/[A-Z]/.test(value)) strengthScore++;        // Uppercase
+        if (/[a-z]/.test(value)) strengthScore++;        // Lowercase
+        if (/[0-9]/.test(value)) strengthScore++;        // Number
+        if (/[\W_]/.test(value)) strengthScore++;        // Special character
+
+        // Map score to strength label and color
+        let strengthText = '';
+        let color = '';
+
+        switch (strengthScore) {
+            case 0:
+            case 1:
+                strengthText = 'Very Weak';
+                color = 'red';
+                break;
+            case 2:
+                strengthText = 'Weak';
+                color = 'orange';
+                break;
+            case 3:
+                strengthText = 'Moderate';
+                color = 'goldenrod';
+                break;
+            case 4:
+                strengthText = 'Strong';
+                color = 'green';
+                break;
+            case 5:
+                strengthText = 'Very Strong';
+                color = 'darkgreen';
+                break;
+        }
+
+        strengthDisplay.textContent = 'Password strength: ' + strengthText;
+        strengthDisplay.style.color = color;
+    });
+}
