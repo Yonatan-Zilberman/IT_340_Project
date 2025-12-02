@@ -35,23 +35,28 @@ This milestone includes:
 
 ```
 IT_340_Project/
-├── index.html              # Homepage with main layout
-├── login.html              # Login and registration page
+├── index.html                      # Homepage with main layout
+├── login.html                      # Login and registration page
+├── dashboard.html                  # New: Auth-protected user dashboard
 ├── css/
-│   └── styles.css          # Custom stylesheet
+│   └── styles.css                  # Custom stylesheet
 ├── js/
-│   └── main.js             # JavaScript for interactivity and API calls
+│   ├── main.js                     # JavaScript for interactivity and API calls
+│   └── dashboard.js                # New: Dashboard logic + auth guard
 ├── backend/
-│   ├── server.js           # Express.js server
+│   ├── server.js                   # Express.js server
 │   ├── routes/
-│   │   └── auth.js         # Authentication routes (register/login)
+│   │   ├── auth.js                 # Authentication routes (register/login)
+│   │   └── dashboard.js            # New: Protected dashboard API route
+│   ├── middleware/
+│   │   └── authMiddleware.js       # New: JWT authentication middleware
 │   ├── models/
-│   │   └── User.js         # MongoDB user model
-│   ├── package.json        # Backend dependencies
-│   └── .env                # Environment variables (not in git)
-├── .env.example            # Example environment variables
-├── .gitignore              # Git ignore rules
-└── README.md               # This file
+│   │   └── User.js                 # MongoDB user model
+│   ├── package.json                # Backend dependencies
+│   └── .env                        # Environment variables (not in Git)
+├── .env.example                    # Example environment variables
+├── .gitignore                      # Git ignore rules
+└── README.md  
 ```
 
 ## Technologies Used
