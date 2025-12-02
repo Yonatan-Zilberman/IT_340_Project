@@ -4,7 +4,7 @@
  */
 
 const API_BASE_URL = document.body?.dataset?.apiBase || 'http://localhost:3000/api';
-const DASHBOARD_REDIRECT = 'index.html';
+const DASHBOARD_REDIRECT = 'dashboard.html';
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -74,8 +74,13 @@ async function handleLoginSubmit(event) {
         form.classList.remove('was-validated');
 
         setTimeout(() => {
-            window.location.href = DASHBOARD_REDIRECT;
-        }, 1200);
+   	    const params = new URLSearchParams(window.location.search);
+            const returnUrl = params.get('returnUrl');
+
+            // If ?returnUrl=... exists, go there; otherwise go to dashboard.html
+    	    window.location.href = returnUrl || DASHBOARD_REDIRECT;
+	}, 1200);
+
     } catch (error) {
         handleAuthError(error);
     } finally {
@@ -113,8 +118,12 @@ async function handleRegisterSubmit(event) {
         form.classList.remove('was-validated');
 
         setTimeout(() => {
-            window.location.href = DASHBOARD_REDIRECT;
+            const params = new URLSearchParams(window.location.search);
+            const returnUrl = params.get('returnUrl');
+
+            window.location.href = returnUrl || DASHBOARD_REDIRECT;
         }, 1200);
+
     } catch (error) {
         handleAuthError(error);
     } finally {
