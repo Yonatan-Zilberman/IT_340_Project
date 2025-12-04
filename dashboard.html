@@ -14,7 +14,7 @@
 </head>
 <body class="bg-light" data-api-base="http://localhost:3000/api">
     <!-- Navigation Header -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
         <div class="container">
             <a class="navbar-brand" href="index.html">
                 <i class="bi bi-ticket-perforated"></i> EventEase
@@ -22,21 +22,47 @@
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item">
                         <a class="nav-link" href="index.html">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="index.html#events">Browse Events</a>
                     </li>
-                    <li class="nav-item">
-                        <span class="nav-link disabled" id="welcomeUser">Welcome</span>
+
+                    <!-- Live Search -->
+                    <li class="nav-item mx-3">
+                        <input type="text" id="navSearch" class="form-control form-control-sm" placeholder="Search events...">
                     </li>
-                    <li class="nav-item">
-                        <button class="btn btn-outline-light ms-2" id="logoutBtn">
-                            <i class="bi bi-box-arrow-right"></i> Logout
-                        </button>
+
+                    <!-- Notifications -->
+                    <li class="nav-item dropdown me-3">
+                        <a class="nav-link position-relative" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-bell"></i>
+                            <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                0
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end animated-dropdown" aria-labelledby="notificationsDropdown">
+                            <li><h6 class="dropdown-header">Notifications</h6></li>
+                            <li><div id="notifList" class="dropdown-item small text-muted">No notifications</div></li>
+                        </ul>
+                    </li>
+
+                    <!-- User Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <img id="userAvatar" src="https://via.placeholder.com/32" class="rounded-circle me-1" alt="User Avatar">
+                            <span id="welcomeUser">Welcome</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end animated-dropdown" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="#">Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtnDropdown">Logout</a></li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -45,6 +71,9 @@
 
     <!-- Main Dashboard Content -->
     <div class="container my-4">
+        <!-- Personalized Welcome Banner -->
+        <div id="welcome-banner" class="welcome-banner mb-4"></div>
+
         <div class="row mb-4">
             <div class="col">
                 <h1 class="h3">Dashboard</h1>
@@ -125,7 +154,7 @@
         </div>
     </div>
 
-    <!-- Footer (reuse from other pages if you want) -->
+    <!-- Footer -->
     <footer class="bg-dark text-light py-3 mt-4">
         <div class="container">
             <div class="row">
@@ -145,4 +174,3 @@
     <script src="js/dashboard.js"></script>
 </body>
 </html>
-
