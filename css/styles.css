@@ -43,6 +43,43 @@ body {
     color: var(--primary-color) !important;
 }
 
+/* Navbar Shadow on Scroll */
+.navbar.scrolled {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Live Search */
+#navSearch {
+    width: 180px;
+    transition: width 0.3s ease;
+}
+
+#navSearch:focus {
+    width: 250px;
+}
+
+/* Dropdown Animation */
+.animated-dropdown {
+    transform: translateY(-10px);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.dropdown-menu.show.animated-dropdown {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* User Avatar */
+#userAvatar {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    vertical-align: middle;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
 /* Hero Section */
 .hero-section {
     background: var(--gradient-primary);
@@ -71,12 +108,8 @@ body {
 }
 
 @keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
 }
 
 .hero-section .container {
@@ -197,78 +230,60 @@ body {
 }
 
 /* Form Validation Styles */
-.was-validated .form-control:invalid {
-    border-color: var(--danger-color);
-}
-
-.was-validated .form-control:valid {
-    border-color: var(--success-color);
-}
+.was-validated .form-control:invalid { border-color: var(--danger-color); }
+.was-validated .form-control:valid { border-color: var(--success-color); }
 
 /* Footer Styles */
-footer {
-    margin-top: auto;
-}
+footer { margin-top: auto; }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .hero-icon {
-        font-size: 8rem;
-    }
-    
-    .login-card {
-        padding: 1.5rem;
-    }
-    
-    .feature-icon {
-        font-size: 2.5rem;
-    }
-    
-    .event-icon {
-        font-size: 3rem;
-    }
+    .hero-icon { font-size: 8rem; }
+    .login-card { padding: 1.5rem; }
+    .feature-icon { font-size: 2.5rem; }
+    .event-icon { font-size: 3rem; }
 }
 
 @media (max-width: 576px) {
-    body {
-        padding-top: 56px;
-    }
-    
-    .hero-section h1 {
-        font-size: 2rem;
-    }
-    
-    .hero-icon {
-        font-size: 6rem;
-    }
-    
-    .login-logo {
-        font-size: 3rem;
-    }
+    body { padding-top: 56px; }
+    .hero-section h1 { font-size: 2rem; }
+    .hero-icon { font-size: 6rem; }
+    .login-logo { font-size: 3rem; }
 }
 
 /* Smooth Scrolling */
-html {
-    scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 /* Button Hover Effects */
-.btn {
-    transition: all 0.3s ease;
-}
-
-.btn:hover {
-    transform: translateY(-2px);
-}
+.btn { transition: all 0.3s ease; }
+.btn:hover { transform: translateY(-2px); }
 
 /* Card Animations */
-.card {
-    transition: all 0.3s ease;
-}
+.card { transition: all 0.3s ease; }
 
 /* Loading States */
-.loading {
-    opacity: 0.6;
-    pointer-events: none;
+.loading { opacity: 0.6; pointer-events: none; }
+
+/* Welcome Banner Styling */
+.welcome-banner {
+    background: linear-gradient(135deg, #4e73df, #1cc88a);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
+/* User Info Card Styling */
+#user-info-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+#user-info-card h5 { font-weight: bold; margin-bottom: 10px; }
+#user-info-card p { margin-bottom: 5px; font-size: 1rem; }
