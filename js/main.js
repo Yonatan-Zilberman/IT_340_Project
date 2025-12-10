@@ -3,8 +3,39 @@
  * Handles form validation, interactivity, and user interactions
  */
 
+/**
+ * Frontend logging helper
+ * Sends logs to the backend logging endpoint
+ */
+function logFrontendEvent(level, message, context = {}) {
+    try {
+        fetch('http://localhost:5000/api/log/frontend', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                level: level || 'info',
+                message: message || '',
+                context: {
+                    url: window.location.href,
+                    path: window.location.pathname,
+                    ...context
+                }
+            })
+        }).catch(function (err) {
+            console.error('Frontend log failed:', err);
+        });
+    } catch (err) {
+        console.error('Frontend log error:', err);
+    }
+}
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Log page load
+    logFrontendEvent('info', 'Page loaded', {
+        hasLoginForm: !!document.getElementById('loginForm')
+    });
+
     initializeLoginPage();
     initializePasswordToggle();
     initializeFormValidation();
@@ -17,6 +48,7 @@ function initializeLoginPage() {
     const loginForm = document.getElementById('loginForm');
     
     if (loginForm) {
+        logFrontendEvent('info', 'Login page initialized');
         loginForm.addEventListener('submit', handleLoginSubmit);
     }
 }
@@ -38,6 +70,12 @@ function handleLoginSubmit(event) {
             password: document.getElementById('password').value,
             rememberMe: document.getElementById('rememberMe').checked
         };
+
+        // Log login attempt (do NOT log password)
+        logFrontendEvent('info', 'Login form submitted', {
+            email: formData.email,
+            rememberMe: formData.rememberMe
+        });
         
         // Show loading state
         const submitButton = form.querySelector('button[type="submit"]');
@@ -46,9 +84,18 @@ function handleLoginSubmit(event) {
         submitButton.disabled = true;
         
         // Simulate login process (replace with actual API call in future milestones)
-        setTimeout(() => {
+        setTimeout(function() {
             // For now, just show success message
-            alert('Login functionality will be implemented in future milestones.\n\nEmail: ' + formData.email + '\nRemember Me: ' + formData.rememberMe);
+            alert(
+                'Login functionality will be implemented in future milestones.\n\nEmail: ' + 
+                formData.email + '\nRemember Me: ' + formData.rememberMe
+            );
+
+            // Log simulated success
+            logFrontendEvent('info', 'Simulated login success (placeholder)', {
+                email: formData.email,
+                rememberMe: formData.rememberMe
+            });
             
             // Reset button
             submitButton.innerHTML = originalText;
@@ -60,6 +107,8 @@ function handleLoginSubmit(event) {
     } else {
         // Form is invalid, show validation messages
         form.classList.add('was-validated');
+
+        logFrontendEvent('warning', 'Login form invalid on submit');
     }
 }
 
@@ -84,6 +133,10 @@ function initializePasswordToggle() {
                 eyeIcon.classList.remove('bi-eye');
                 eyeIcon.classList.add('bi-eye-slash');
             }
+
+            logFrontendEvent('info', 'Password visibility toggled', {
+                visible: type === 'text'
+            });
         });
     }
 }
@@ -95,11 +148,12 @@ function initializeFormValidation() {
     // Get all forms with validation
     const forms = document.querySelectorAll('.needs-validation, #loginForm');
     
-    forms.forEach(form => {
+    forms.forEach(function(form) {
         form.addEventListener('submit', function(event) {
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
+                logFrontendEvent('warning', 'Form submission blocked due to validation failure');
             }
             
             form.classList.add('was-validated');
@@ -119,8 +173,14 @@ function handlePresaleCode() {
         if (code) {
             // Presale code validation will be implemented in future milestones
             alert('Presale code functionality will be implemented in future milestones.\n\nCode: ' + code);
+
+            logFrontendEvent('info', 'Presale code entered', {
+                code: code
+            });
         } else {
             alert('Please enter a presale code.');
+
+            logFrontendEvent('warning', 'Presale code submit with empty value');
         }
     }
 }
@@ -130,6 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const presaleCodeButton = document.querySelector('#presaleCode')?.parentElement?.querySelector('button');
     
     if (presaleCodeButton) {
+        logFrontendEvent('info', 'Presale section initialized');
         presaleCodeButton.addEventListener('click', handlePresaleCode);
     }
     
@@ -147,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /**
  * Smooth scroll for anchor links
  */
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
     anchor.addEventListener('click', function(e) {
         const href = this.getAttribute('href');
         if (href !== '#' && href.length > 1) {
@@ -157,6 +218,10 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 target.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
+                });
+
+                logFrontendEvent('info', 'Smooth scroll link clicked', {
+                    href: href
                 });
             }
         }
@@ -169,8 +234,8 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 function animateOnScroll() {
     const elements = document.querySelectorAll('.feature-card, .event-card');
     
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
             if (entry.isIntersecting) {
                 entry.target.style.opacity = '1';
                 entry.target.style.transform = 'translateY(0)';
@@ -180,7 +245,7 @@ function animateOnScroll() {
         threshold: 0.1
     });
     
-    elements.forEach(element => {
+    elements.forEach(function(element) {
         element.style.opacity = '0';
         element.style.transform = 'translateY(20px)';
         element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
@@ -192,4 +257,3 @@ function animateOnScroll() {
 if ('IntersectionObserver' in window) {
     document.addEventListener('DOMContentLoaded', animateOnScroll);
 }
-
