@@ -3,13 +3,16 @@
  * Handles form validation, interactivity, and user interactions
  */
 
+const API_BASE_URL = 'http://localhost:5000';
+let currentLoginEmailFor2FA = null;
+
 /**
  * Frontend logging helper
  * Sends logs to the backend logging endpoint
  */
 function logFrontendEvent(level, message, context = {}) {
     try {
-        fetch('http://localhost:5000/api/log/frontend', {
+        fetch(`${API_BASE_URL}/api/log/frontend`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -37,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     initializeLoginPage();
+    initializeTwoFactorSection();
     initializePasswordToggle();
     initializeFormValidation();
 });
@@ -54,7 +58,7 @@ function initializeLoginPage() {
 }
 
 /**
- * Handle login form submission
+ * Handle login form submission (step 1: password check)
  */
 function handleLoginSubmit(event) {
     event.preventDefault();
@@ -65,16 +69,14 @@ function handleLoginSubmit(event) {
     // Check if form is valid
     if (form.checkValidity()) {
         // Get form data
-        const formData = {
-            email: document.getElementById('email').value,
-            password: document.getElementById('password').value,
-            rememberMe: document.getElementById('rememberMe').checked
-        };
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
 
         // Log login attempt (do NOT log password)
         logFrontendEvent('info', 'Login form submitted', {
-            email: formData.email,
-            rememberMe: formData.rememberMe
+            email: email,
+            rememberMe: rememberMe
         });
         
         // Show loading state
@@ -82,33 +84,182 @@ function handleLoginSubmit(event) {
         const originalText = submitButton.innerHTML;
         submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';
         submitButton.disabled = true;
-        
-        // Simulate login process (replace with actual API call in future milestones)
-        setTimeout(function() {
-            // For now, just show success message
-            alert(
-                'Login functionality will be implemented in future milestones.\n\nEmail: ' + 
-                formData.email + '\nRemember Me: ' + formData.rememberMe
-            );
 
-            // Log simulated success
-            logFrontendEvent('info', 'Simulated login success (placeholder)', {
-                email: formData.email,
-                rememberMe: formData.rememberMe
+        // Hide any old 2FA section content
+        const twoFactorSection = document.getElementById('twoFactorSection');
+        if (twoFactorSection) {
+            twoFactorSection.style.display = 'none';
+        }
+        currentLoginEmailFor2FA = null;
+
+        // Call backend /login to check password and trigger 2FA
+        fetch(`${API_BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
+        .then(async function(response) {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                // Login failed
+                const msg = data.message || 'Login failed.';
+                alert(msg);
+                logFrontendEvent('warning', 'Login failed', {
+                    email: email,
+                    status: response.status,
+                    message: msg
+                });
+
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+                return;
+            }
+
+            // If backend says 2FA required
+            if (data.twoFactorRequired) {
+                currentLoginEmailFor2FA = data.email || email;
+
+                logFrontendEvent('info', '2FA required after login', {
+                    email: currentLoginEmailFor2FA
+                });
+
+                // Show 2FA section
+                const twoFactorSection = document.getElementById('twoFactorSection');
+                const twoFactorMessage = document.getElementById('twoFactorMessage');
+                const twoFactorCodeInput = document.getElementById('twoFactorCode');
+
+                if (twoFactorSection) {
+                    twoFactorSection.style.display = 'block';
+                }
+                if (twoFactorMessage) {
+                    // For demo: show OTP in message so professor can see it
+                    const otpText = data.otpPreview ? ` (Demo code: ${data.otpPreview})` : '';
+                    twoFactorMessage.textContent = 'Enter the 6-digit code sent to your email.' + otpText;
+                }
+                if (twoFactorCodeInput) {
+                    twoFactorCodeInput.value = '';
+                    twoFactorCodeInput.focus();
+                }
+
+                alert('Password correct. Please enter your 2FA code.');
+
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+                return;
+            }
+
+            // If no 2FA (fallback, not expected here)
+            alert('Login successful (no 2FA).');
+            logFrontendEvent('info', 'Login successful without 2FA (fallback)', {
+                email: email
             });
-            
-            // Reset button
+
             submitButton.innerHTML = originalText;
             submitButton.disabled = false;
-            
-            // In production, redirect to dashboard or home page
-            // window.location.href = 'dashboard.html';
-        }, 1000);
+
+            // Redirect to dashboard
+            window.location.href = 'dashboard.html';
+        })
+        .catch(function(err) {
+            console.error('Login request failed:', err);
+            alert('Network error during login. Please try again.');
+            logFrontendEvent('error', 'Login request failed', {
+                email: email,
+                error: err.message
+            });
+
+            submitButton.innerHTML = originalText;
+            submitButton.disabled = false;
+        });
     } else {
         // Form is invalid, show validation messages
         form.classList.add('was-validated');
 
         logFrontendEvent('warning', 'Login form invalid on submit');
+    }
+}
+
+/**
+ * Initialize 2FA section (step 2)
+ */
+function initializeTwoFactorSection() {
+    const twoFactorForm = document.getElementById('twoFactorForm');
+    const twoFactorSection = document.getElementById('twoFactorSection');
+
+    if (twoFactorForm && twoFactorSection) {
+        twoFactorForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (!twoFactorForm.checkValidity()) {
+                twoFactorForm.classList.add('was-validated');
+                logFrontendEvent('warning', '2FA form invalid on submit');
+                return;
+            }
+
+            if (!currentLoginEmailFor2FA) {
+                alert('No login is in progress. Please log in again.');
+                logFrontendEvent('warning', '2FA submit without login context');
+                return;
+            }
+
+            const codeInput = document.getElementById('twoFactorCode');
+            const code = codeInput ? codeInput.value.trim() : '';
+
+            const button = twoFactorForm.querySelector('button[type="submit"]');
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+            fetch(`${API_BASE_URL}/api/auth/verify-2fa`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: currentLoginEmailFor2FA,
+                    code: code
+                })
+            })
+            .then(async function(response) {
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    const msg = data.message || '2FA verification failed.';
+                    alert(msg);
+                    logFrontendEvent('warning', '2FA verification failed', {
+                        email: currentLoginEmailFor2FA,
+                        status: response.status,
+                        message: msg
+                    });
+
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    return;
+                }
+
+                // 2FA success
+                alert('2FA verification successful. You are now logged in.');
+                logFrontendEvent('info', '2FA verification successful', {
+                    email: currentLoginEmailFor2FA
+                });
+
+                // Clear state
+                currentLoginEmailFor2FA = null;
+
+                // Redirect to dashboard
+                window.location.href = 'dashboard.html';
+            })
+            .catch(function(err) {
+                console.error('2FA verify request failed:', err);
+                alert('Network error during 2FA verification. Please try again.');
+                logFrontendEvent('error', '2FA verify request failed', {
+                    email: currentLoginEmailFor2FA,
+                    error: err.message
+                });
+
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+        });
     }
 }
 
