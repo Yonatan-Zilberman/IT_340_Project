@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
+const frontendLogRoutes = require('./routes/frontendLog');
 
 const fs = require('fs');
 const path = require('path');
@@ -17,7 +18,7 @@ const accessLogStream = fs.createWriteStream(
 );
 
 // Middleware
-app.use(morgan('combined', { stream: accessLogStream })); // log to file
+app.use(morgan('combined', { stream: accessLogStream })); // log all requests
 app.use(cors());
 app.use(express.json());
 
@@ -33,6 +34,7 @@ mongoose
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/log/frontend', frontendLogRoutes);
 
 // Simple test route
 app.get('/', (req, res) => {
@@ -45,4 +47,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
