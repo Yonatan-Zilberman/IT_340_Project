@@ -4,6 +4,14 @@ const User = require('../models/User');
 
 const router = express.Router();
 
+// In-memory 2FA store (email -> { code, expiresAt })
+const pendingOtps = {};
+
+// Helper to generate a 6-digit OTP
+function generateOtp() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
@@ -42,6 +50,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
+// Step 1 of login: check password and issue 2FA code
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -64,17 +73,67 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password.' });
     }
 
-    // 4) Login success (we'll add 2FA and tokens later)
+    // 4) Password is correct -> generate 2FA code
+    const code = generateOtp();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+    pendingOtps[email] = { code, expiresAt };
+
+    // Log for demo / debugging (this is your "simulated SMS/email")
+    console.log(`2FA code for ${email}: ${code}`);
+
+    // 5) Tell frontend that 2FA is required
     return res.status(200).json({
-      message: 'Login successful.',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      }
+      message: 'Password correct. 2FA code required.',
+      twoFactorRequired: true,
+      email,
+      // For class demo, we also send the code back so you can see it.
+      // In a real system you WOULD NOT send this in the response.
+      otpPreview: code
     });
   } catch (err) {
     console.error('Login error:', err.message);
+    res.status(500).json({ message: 'Server error. Please try again later.' });
+  }
+});
+
+// POST /api/auth/verify-2fa
+// Step 2 of login: verify 2FA code
+router.post('/verify-2fa', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ message: 'Email and code are required.' });
+    }
+
+    const entry = pendingOtps[email];
+    if (!entry) {
+      return res.status(400).json({ message: 'No pending 2FA code for this email. Please log in again.' });
+    }
+
+    // Check expiration
+    if (Date.now() > entry.expiresAt) {
+      delete pendingOtps[email];
+      return res.status(400).json({ message: '2FA code has expired. Please log in again.' });
+    }
+
+    // Check code
+    if (code !== entry.code) {
+      return res.status(400).json({ message: 'Invalid 2FA code.' });
+    }
+
+    // Code is valid -> clear pending code
+    delete pendingOtps[email];
+
+    // In a real app we would create a session or JWT here.
+    // For this project, just say login is fully complete.
+    return res.status(200).json({
+      message: '2FA verification successful. Login complete.',
+      email
+    });
+  } catch (err) {
+    console.error('2FA verify error:', err.message);
     res.status(500).json({ message: 'Server error. Please try again later.' });
   }
 });
