@@ -4,9 +4,20 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
 
+const fs = require('fs');
+const path = require('path');
+const morgan = require('morgan');
+
 const app = express();
 
+// Create a write stream (in append mode) for access logs
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, 'logs', 'access.log'),
+  { flags: 'a' }
+);
+
 // Middleware
+app.use(morgan('combined', { stream: accessLogStream })); // log to file
 app.use(cors());
 app.use(express.json());
 
