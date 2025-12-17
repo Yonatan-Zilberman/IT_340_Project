@@ -1,408 +1,421 @@
 /**
  * EventEase - Main JavaScript File
- * Handles form validation, interactivity, and user interactions
+ * Orchestrates module initialization and page-specific functionality
  */
 
-const API_BASE_URL = document.body?.dataset?.apiBase || 'http://localhost:3000/api';
-const DASHBOARD_REDIRECT = 'dashboard.html';
+const utils = window.utils;
 
-// Wait for DOM to be fully loaded
+// Wait for DOM to be fully loaded AND all scripts to be ready
 document.addEventListener('DOMContentLoaded', function() {
-    initializeLoginPage();
-    initializeRegisterPage();
-    initializePasswordToggle();
-    initializeFormValidation();
-    initializePresaleCode();
-    initializeSmoothScroll();
-    initializeForgotPassword();
-    initializePasswordStrength(); // <-- added for password meter
-    
-    // Initialize scroll animations if supported
-    if ('IntersectionObserver' in window) {
-        animateOnScroll();
+  // Wait for services to be available
+  function waitForServices(callback, maxAttempts = 30) {
+    let attempts = 0;
+    const checkServices = () => {
+      attempts++;
+      const hasServices = window.CONFIG && window.apiService && window.authService && window.eventService && window.utils;
+      
+      if (hasServices || attempts >= maxAttempts) {
+        if (!hasServices) {
+          console.warn('Some services not available after waiting:', {
+            CONFIG: !!window.CONFIG,
+            apiService: !!window.apiService,
+            authService: !!window.authService,
+            eventService: !!window.eventService,
+            utils: !!window.utils
+          });
+          console.warn('Available window properties:', Object.keys(window).filter(k => k.includes('Service') || k === 'CONFIG' || k === 'utils'));
+        } else {
+          console.log('All services available!');
+        }
+        callback();
+      } else {
+        setTimeout(checkServices, 50);
+      }
+    };
+    checkServices();
+  }
+  
+  waitForServices(() => {
+    // Update navigation bar based on auth state
+    const utils = window.utils;
+    if (utils && utils.updateNavigation) {
+      utils.updateNavigation();
     }
+    
+    // Log page load
+    if (utils && utils.logFrontendEvent) {
+      utils.logFrontendEvent('info', 'Page loaded', {
+        path: window.location.pathname,
+        hasLoginForm: !!document.getElementById('loginForm')
+      });
+    }
+
+    // Initialize based on current page
+    const path = window.location.pathname;
+    
+    if (path.includes('login.html')) {
+      initializeLoginPage();
+    } else if (path.includes('index.html') || path === '/') {
+      initializeHomePage();
+    } else if (path.includes('dashboard.html')) {
+      initializeDashboard();
+    }
+
+    // Initialize common functionality
+    initializeFormValidation();
+    initializeSmoothScroll();
+    initializePresaleCode();
+  });
 });
 
 /**
- * Initialize login page specific functionality
+ * Initialize login page
  */
 function initializeLoginPage() {
-    const loginForm = document.getElementById('loginForm');
-    
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLoginSubmit);
-    }
+  const authModule = window.authModule;
+  if (authModule) {
+    authModule.initializeLoginPage();
+    authModule.initializeTwoFactorSection();
+    authModule.initializePasswordToggle();
+  }
+  
+  // Initialize registration button
+  initializeRegistration();
 }
 
 /**
- * Initialize registration form functionality
+ * Initialize homepage
  */
-function initializeRegisterPage() {
-    const registerForm = document.getElementById('registerForm');
-
-    if (registerForm) {
-        registerForm.addEventListener('submit', handleRegisterSubmit);
+function initializeHomePage() {
+  const eventsModule = window.eventsModule;
+  if (eventsModule && eventsModule.loadEvents) {
+    eventsModule.loadEvents();
+  } else {
+    console.error('EventsModule not available');
+    const container = document.getElementById('eventsContainer');
+    if (container) {
+      container.innerHTML = '<p class="text-danger text-center">Service initialization error. Please refresh the page.</p>';
     }
+  }
 }
 
 /**
- * Handle login form submission
+ * Initialize dashboard
  */
-async function handleLoginSubmit(event) {
-    event.preventDefault();
-    event.stopPropagation();
+function initializeDashboard() {
+  // Check authentication
+  if (!utils.requireAuth()) {
+    return;
+  }
 
-    const form = event.target;
-
-    if (!form.checkValidity()) {
-        form.classList.add('was-validated');
-        return;
-    }
-
-    const payload = {
-        email: document.getElementById('email').value.trim(),
-        password: document.getElementById('password').value,
-    };
-
-    const submitButton = form.querySelector('button[type="submit"]');
-    const resetLoading = setLoadingState(submitButton, 'Signing in...');
-
-    try {
-        const data = await sendAuthRequest('/auth/login', payload);
-        handleAuthSuccess(data, 'Welcome back! Redirecting you now...');
-        form.reset();
-        form.classList.remove('was-validated');
-
-        setTimeout(() => {
-   	    const params = new URLSearchParams(window.location.search);
-            const returnUrl = params.get('returnUrl');
-
-            // If ?returnUrl=... exists, go there; otherwise go to dashboard.html
-    	    window.location.href = returnUrl || DASHBOARD_REDIRECT;
-	}, 1200);
-
-    } catch (error) {
-        handleAuthError(error);
-    } finally {
-        resetLoading();
-    }
+  // Load user data
+  loadDashboardData();
 }
 
 /**
- * Handle register form submission
+ * Load dashboard data
  */
-async function handleRegisterSubmit(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const form = event.target;
-
-    if (!form.checkValidity()) {
-        form.classList.add('was-validated');
-        return;
+async function loadDashboardData() {
+  const authService = window.authService;
+  const user = authService.getUser();
+  
+  if (user) {
+    const userNameElement = document.getElementById('userName');
+    if (userNameElement) {
+      userNameElement.textContent = user.name;
     }
-
-    const payload = {
-        name: document.getElementById('registerName').value.trim(),
-        email: document.getElementById('registerEmail').value.trim(),
-        password: document.getElementById('registerPassword').value,
-    };
-
-    const submitButton = form.querySelector('button[type="submit"]');
-    const resetLoading = setLoadingState(submitButton, 'Creating account...');
-
-    try {
-        const data = await sendAuthRequest('/auth/register', payload);
-        handleAuthSuccess(data, 'Account created! You are now signed in.');
-        form.reset();
-        form.classList.remove('was-validated');
-
-        setTimeout(() => {
-            const params = new URLSearchParams(window.location.search);
-            const returnUrl = params.get('returnUrl');
-
-            window.location.href = returnUrl || DASHBOARD_REDIRECT;
-        }, 1200);
-
-    } catch (error) {
-        handleAuthError(error);
-    } finally {
-        resetLoading();
-    }
-}
-
-/**
- * Send POST request to authentication endpoint
- */
-async function sendAuthRequest(endpoint, payload) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-    });
-
-    let data;
-    try {
-        data = await response.json();
-    } catch (err) {
-        data = null;
-    }
-
-    if (!response.ok) {
-        throw new Error(data?.message || 'Authentication failed.');
-    }
-
-    return data;
-}
-
-/**
- * Display success messages and persist token/user details
- */
-function handleAuthSuccess(data, message) {
-    if (data?.token) {
-        localStorage.setItem('eventease_token', data.token);
-    }
-
-    if (data?.user) {
-        localStorage.setItem('eventease_user', JSON.stringify(data.user));
-    }
-
-    renderAlert('success', message || data?.message || 'Success!');
-}
-
-/**
- * Surface auth errors to the user
- */
-function handleAuthError(error) {
-    const message = error?.message || 'Something went wrong. Please try again.';
-    renderAlert('danger', message);
-}
-
-/**
- * Toggle button loading state and return cleanup fn
- */
-function setLoadingState(button, loadingText) {
-    if (!button) {
-        return () => {};
-    }
-
-    const originalHtml = button.innerHTML;
-    const originalDisabled = button.disabled;
-
-    button.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${loadingText}`;
-    button.disabled = true;
-
-    return () => {
-        button.innerHTML = originalHtml;
-        button.disabled = originalDisabled;
-    };
-}
-
-/**
- * Render bootstrap alerts inside login card
- */
-function renderAlert(type, message) {
-    const container = document.getElementById('authAlertContainer');
-    if (!container) return;
-
-    container.innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
-}
-
-/**
- * Initialize password visibility toggle
- */
-function initializePasswordToggle() {
-    const toggleButton = document.getElementById('togglePassword');
-    const passwordInput = document.getElementById('password');
-    const eyeIcon = document.getElementById('eyeIcon');
-    
-    if (toggleButton && passwordInput && eyeIcon) {
-        toggleButton.addEventListener('click', function() {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            
-            // Toggle icon
-            if (type === 'password') {
-                eyeIcon.classList.remove('bi-eye-slash');
-                eyeIcon.classList.add('bi-eye');
-            } else {
-                eyeIcon.classList.remove('bi-eye');
-                eyeIcon.classList.add('bi-eye-slash');
-            }
-        });
-    }
+  }
 }
 
 /**
  * Initialize form validation
  */
 function initializeFormValidation() {
-    const forms = document.querySelectorAll('.needs-validation');
-    
-    forms.forEach(form => {
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            
-            form.classList.add('was-validated');
-        }, false);
-    });
+  const forms = document.querySelectorAll('.needs-validation, #loginForm, #twoFactorForm');
+  
+  forms.forEach(function(form) {
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+        utils.logFrontendEvent('warning', 'Form submission blocked due to validation failure');
+      }
+      
+      form.classList.add('was-validated');
+    }, false);
+  });
 }
 
 /**
- * Initialize presale code functionality
+ * Smooth scroll for anchor links
  */
-function initializePresaleCode() {
-    const presaleCodeButton = document.querySelector('#presaleCode')?.parentElement?.querySelector('button');
-    const presaleCodeInput = document.getElementById('presaleCode');
-    
-    if (presaleCodeButton && presaleCodeInput) {
-        presaleCodeButton.addEventListener('click', handlePresaleCode);
-        
-        presaleCodeInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                handlePresaleCode();
-            }
-        });
-    }
+function initializeSmoothScroll() {
+  document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+    anchor.addEventListener('click', function(e) {
+      const href = this.getAttribute('href');
+      if (href !== '#' && href.length > 1) {
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+
+          utils.logFrontendEvent('info', 'Smooth scroll link clicked', { href });
+        }
+      }
+    });
+  });
 }
 
 /**
  * Handle presale code application
  */
+function initializePresaleCode() {
+  const presaleCodeButton = document.querySelector('#presaleCode')?.parentElement?.querySelector('button');
+  
+  if (presaleCodeButton) {
+    utils.logFrontendEvent('info', 'Presale section initialized');
+    presaleCodeButton.addEventListener('click', handlePresaleCode);
+  }
+  
+  const presaleCodeInput = document.getElementById('presaleCode');
+  if (presaleCodeInput) {
+    presaleCodeInput.addEventListener('keypress', function(event) {
+      if (event.key === 'Enter') {
+        handlePresaleCode();
+      }
+    });
+  }
+}
+
+/**
+ * Handle presale code
+ */
 function handlePresaleCode() {
-    const presaleCodeInput = document.getElementById('presaleCode');
-    
-    if (!presaleCodeInput) return;
-    
+  const presaleCodeInput = document.getElementById('presaleCode');
+  
+  if (presaleCodeInput) {
     const code = presaleCodeInput.value.trim();
     
-    if (!code) {
-        renderAlert('warning', 'Please enter a presale code.');
-        return;
+    if (code) {
+      // Presale code validation will be implemented in future milestones
+      alert('Presale code functionality will be implemented in future milestones.\n\nCode: ' + code);
+      utils.logFrontendEvent('info', 'Presale code entered', { code });
+    } else {
+      alert('Please enter a presale code.');
+      utils.logFrontendEvent('warning', 'Presale code submit with empty value');
     }
-    
-    // Presale code validation will be implemented in future milestones
-    renderAlert('info', 'Presale code functionality will be implemented in future milestones. Code: ' + code);
-}
-
-/**
- * Initialize forgot password link
- */
-function initializeForgotPassword() {
-    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-    
-    if (forgotPasswordLink) {
-        forgotPasswordLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            renderAlert('info', 'Password reset functionality will be available in a future update.');
-        });
-    }
-}
-
-/**
- * Initialize smooth scroll for anchor links
- */
-function initializeSmoothScroll() {
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            if (href !== '#' && href.length > 1) {
-                e.preventDefault();
-                const target = document.querySelector(href);
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            }
-        });
-    });
+  }
 }
 
 /**
  * Add animation on scroll (optional enhancement)
  */
 function animateOnScroll() {
-    const elements = document.querySelectorAll('.feature-card, .event-card');
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, {
-        threshold: 0.1
+  const elements = document.querySelectorAll('.feature-card, .event-card');
+  
+  if (!('IntersectionObserver' in window)) {
+    return;
+  }
+  
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
     });
-    
-    elements.forEach(element => {
-        element.style.opacity = '0';
-        element.style.transform = 'translateY(20px)';
-        element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(element);
-    });
+  }, {
+    threshold: 0.1
+  });
+  
+  elements.forEach(function(element) {
+    element.style.opacity = '0';
+    element.style.transform = 'translateY(20px)';
+    element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(element);
+  });
 }
+
+// Initialize scroll animations if supported
+if ('IntersectionObserver' in window) {
+  document.addEventListener('DOMContentLoaded', animateOnScroll);
+}
+
 /**
- * Initialize enhanced password strength meter for registration
+ * Initialize registration functionality
  */
-function initializePasswordStrength() {
-    const passwordInput = document.getElementById('registerPassword');
-    const strengthDisplay = document.getElementById('password-strength');
-
-    if (!passwordInput || !strengthDisplay) return;
-
-    passwordInput.addEventListener('input', () => {
-        const value = passwordInput.value;
-        let strengthScore = 0;
-
-        // Criteria checks
-        if (value.length >= 8) strengthScore++;          // Minimum length
-        if (/[A-Z]/.test(value)) strengthScore++;        // Uppercase
-        if (/[a-z]/.test(value)) strengthScore++;        // Lowercase
-        if (/[0-9]/.test(value)) strengthScore++;        // Number
-        if (/[\W_]/.test(value)) strengthScore++;        // Special character
-
-        // Map score to strength label and color
-        let strengthText = '';
-        let color = '';
-
-        switch (strengthScore) {
-            case 0:
-            case 1:
-                strengthText = 'Very Weak';
-                color = 'red';
-                break;
-            case 2:
-                strengthText = 'Weak';
-                color = 'orange';
-                break;
-            case 3:
-                strengthText = 'Moderate';
-                color = 'goldenrod';
-                break;
-            case 4:
-                strengthText = 'Strong';
-                color = 'green';
-                break;
-            case 5:
-                strengthText = 'Very Strong';
-                color = 'darkgreen';
-                break;
-        }
-
-        strengthDisplay.textContent = 'Password strength: ' + strengthText;
-        strengthDisplay.style.color = color;
+function initializeRegistration() {
+  // Wait for DOM to be ready
+  setTimeout(() => {
+    // Find all "Create Account" buttons/links
+    const createAccountLinks = document.querySelectorAll('a.btn-outline-primary, a[href="#"]');
+    
+    console.log('Registration init - found links:', createAccountLinks.length);
+    
+    createAccountLinks.forEach(link => {
+      const text = link.textContent || link.innerText || '';
+      console.log('Checking link:', text);
+      if (text.includes('Create Account') || text.includes('Get Started')) {
+        console.log('Attaching click handler to:', text);
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Create Account clicked');
+          showRegistrationModal();
+        });
+      }
     });
+    
+    // Also check for specific ID
+    const getStartedBtn = document.getElementById('getStartedBtn');
+    if (getStartedBtn) {
+      console.log('Found getStartedBtn');
+      getStartedBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        showRegistrationModal();
+      });
+    }
+  }, 100);
+}
+
+/**
+ * Show registration modal
+ */
+function showRegistrationModal() {
+  // Check if modal already exists
+  let modal = document.getElementById('registrationModal');
+  
+  if (!modal) {
+    // Create modal
+    modal = document.createElement('div');
+    modal.id = 'registrationModal';
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Create Account</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="registrationForm" novalidate>
+              <div class="mb-3">
+                <label for="regName" class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="regName" required>
+                <div class="invalid-feedback">Please enter your name.</div>
+              </div>
+              <div class="mb-3">
+                <label for="regEmail" class="form-label">Email Address</label>
+                <input type="email" class="form-control" id="regEmail" required>
+                <div class="invalid-feedback">Please enter a valid email address.</div>
+              </div>
+              <div class="mb-3">
+                <label for="regPassword" class="form-label">Password</label>
+                <input type="password" class="form-control" id="regPassword" required minlength="6">
+                <div class="invalid-feedback">Password must be at least 6 characters.</div>
+              </div>
+              <div id="registrationError" class="alert alert-danger d-none"></div>
+              <div id="registrationSuccess" class="alert alert-success d-none"></div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="submitRegistration">Create Account</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Initialize Bootstrap modal
+    const bsModal = new bootstrap.Modal(modal);
+    
+    // Handle form submission
+    const submitBtn = modal.querySelector('#submitRegistration');
+    submitBtn.addEventListener('click', async function() {
+      const form = modal.querySelector('#registrationForm');
+      const nameInput = modal.querySelector('#regName');
+      const emailInput = modal.querySelector('#regEmail');
+      const passwordInput = modal.querySelector('#regPassword');
+      const errorDiv = modal.querySelector('#registrationError');
+      const successDiv = modal.querySelector('#registrationSuccess');
+      
+      // Clear previous messages
+      errorDiv.classList.add('d-none');
+      successDiv.classList.add('d-none');
+      
+      if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+      }
+      
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      
+      // Disable button
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
+      
+      try {
+        // Wait for authService to be available
+        let authService = window.authService;
+        let attempts = 0;
+        while (!authService && attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+          authService = window.authService;
+          attempts++;
+        }
+        
+        if (!authService) {
+          throw new Error('Authentication service not available. Please refresh the page.');
+        }
+        
+        await authService.register({ name, email, password });
+        
+        // Show success
+        successDiv.textContent = 'Account created successfully! You can now log in.';
+        successDiv.classList.remove('d-none');
+        
+        // Clear form
+        form.reset();
+        form.classList.remove('was-validated');
+        
+        // Close modal after 2 seconds
+        setTimeout(() => {
+          bsModal.hide();
+          // Redirect to login or pre-fill email
+          const loginEmail = document.getElementById('email');
+          if (loginEmail) {
+            loginEmail.value = email;
+          }
+        }, 2000);
+        
+      } catch (error) {
+        let errorMsg = 'Registration failed. Please try again.';
+        if (error.isNetworkError) {
+          errorMsg = 'Unable to connect to server. Please make sure the backend is running.';
+        } else if (error.data) {
+          errorMsg = error.data.error || error.data.message || error.message;
+        } else if (error.message) {
+          errorMsg = error.message;
+        }
+        errorDiv.textContent = errorMsg;
+        errorDiv.classList.remove('d-none');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Create Account';
+      }
+    });
+    
+    // Show modal
+    bsModal.show();
+  } else {
+    // Modal exists, just show it
+    const bsModal = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
+    bsModal.show();
+  }
 }

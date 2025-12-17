@@ -1,176 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - EventEase</title>
-
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8">
+  <title>EventEase Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="bg-light" data-api-base="http://localhost:3000/api">
-    <!-- Navigation Header -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="index.html">
-                <i class="bi bi-ticket-perforated"></i> EventEase
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+<body class="bg-light">
+  <!-- Navigation Header -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">
+        <i class="bi bi-ticket-perforated"></i> EventEase
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <!-- Navigation items will be dynamically updated by updateNavigation() -->
+        </ul>
+      </div>
+    </div>
+  </nav>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.html">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.html#events">Browse Events</a>
-                    </li>
-
-                    <!-- Live Search -->
-                    <li class="nav-item mx-3">
-                        <input type="text" id="navSearch" class="form-control form-control-sm" placeholder="Search events...">
-                    </li>
-
-                    <!-- Notifications -->
-                    <li class="nav-item dropdown me-3">
-                        <a class="nav-link position-relative" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-bell"></i>
-                            <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                0
-                            </span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end animated-dropdown" aria-labelledby="notificationsDropdown">
-                            <li><h6 class="dropdown-header">Notifications</h6></li>
-                            <li><div id="notifList" class="dropdown-item small text-muted">No notifications</div></li>
-                        </ul>
-                    </li>
-
-                    <!-- User Dropdown -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <img id="userAvatar" src="https://via.placeholder.com/32" class="rounded-circle me-1" alt="User Avatar">
-                            <span id="welcomeUser">Welcome</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end animated-dropdown" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="#">Profile</a></li>
-                            <li><a class="dropdown-item" href="#">Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" id="logoutBtnDropdown">Logout</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Dashboard Content -->
-    <div class="container my-4">
-        <!-- Personalized Welcome Banner -->
-        <div id="welcome-banner" class="welcome-banner mb-4"></div>
-
-        <div class="row mb-4">
-            <div class="col">
-                <h1 class="h3">Dashboard</h1>
-                <p class="text-muted">Overview of your account and events.</p>
-            </div>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="bi bi-calendar-event"></i> Total Events
-                        </h5>
-                        <p class="display-6 mb-0" id="statTotalEvents">0</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="bi bi-people"></i> Total Attendees
-                        </h5>
-                        <p class="display-6 mb-0" id="statTotalAttendees">0</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="bi bi-currency-dollar"></i> Revenue
-                        </h5>
-                        <p class="display-6 mb-0" id="statRevenue">$0</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions + Upcoming Events -->
-        <div class="row g-3">
-            <!-- Quick Actions -->
-            <div class="col-lg-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header">
-                        <strong>Quick Actions</strong>
-                    </div>
-                    <div class="card-body d-grid gap-2">
-                        <button class="btn btn-primary" id="btnCreateEvent">
-                            <i class="bi bi-plus-circle"></i> Create New Event
-                        </button>
-                        <button class="btn btn-outline-primary" id="btnViewEvents">
-                            <i class="bi bi-list-ul"></i> Manage Events
-                        </button>
-                        <button class="btn btn-outline-secondary" id="btnViewReports">
-                            <i class="bi bi-graph-up"></i> View Reports
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Upcoming Events -->
-            <div class="col-lg-8">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <strong>Upcoming Events</strong>
-                        <span class="text-muted small" id="eventsCountLabel">0 events</span>
-                    </div>
-                    <div class="card-body">
-                        <div id="upcomingEventsList" class="list-group">
-                            <div class="text-muted">Loading events...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="container pt-3 pb-5" style="margin-top: 76px;">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <h1 class="display-5 fw-bold mb-2">Welcome back, <span id="userName">User</span>!</h1>
+        <p class="text-muted">Manage your tickets, orders, and explore upcoming events</p>
+      </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-light py-3 mt-4">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h6><i class="bi bi-ticket-perforated"></i> EventEase</h6>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="text-muted mb-0 small">&copy; 2024 EventEase. All rights reserved.</p>
-                </div>
-            </div>
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+      <div class="col-md-4 mb-3">
+        <div class="card shadow-sm border-primary">
+          <div class="card-body text-center">
+            <i class="bi bi-ticket-perforated text-primary" style="font-size: 2.5rem;"></i>
+            <h3 class="mt-2 mb-0" id="totalTickets">0</h3>
+            <p class="text-muted mb-0">Tickets Purchased</p>
+          </div>
         </div>
-    </footer>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card shadow-sm border-success">
+          <div class="card-body text-center">
+            <i class="bi bi-currency-dollar text-success" style="font-size: 2.5rem;"></i>
+            <h3 class="mt-2 mb-0" id="totalSpent">$0</h3>
+            <p class="text-muted mb-0">Total Spent</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card shadow-sm border-info">
+          <div class="card-body text-center">
+            <i class="bi bi-list-ul text-info" style="font-size: 2.5rem;"></i>
+            <h3 class="mt-2 mb-0" id="totalListings">0</h3>
+            <p class="text-muted mb-0">Active Listings</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Dashboard JS -->
-    <script src="js/dashboard.js"></script>
+    <!-- Main Content Row -->
+    <div class="row">
+      <!-- Left Column: Orders and Listings -->
+      <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-ticket"></i> My Orders</h5>
+          </div>
+          <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            <div id="ordersContainer">
+              <p class="text-muted">Loading orders...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-list-ul"></i> My Listings</h5>
+          </div>
+          <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            <div id="listingsContainer">
+              <p class="text-muted">Loading listings...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Featured Events -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Featured Events</h5>
+              <a href="events.html" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="eventsContainer">
+              <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading events...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Custom JS - Load in order -->
+  <script src="js/config.js"></script>
+  <script src="js/services/apiService.js"></script>
+  <script src="js/services/authService.js"></script>
+  <script src="js/services/eventService.js"></script>
+  <script src="js/services/ticketService.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/main.js"></script>
+  <!-- Footer -->
+  <footer class="bg-dark text-light py-4 mt-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <h5><i class="bi bi-ticket-perforated"></i> EventEase</h5>
+          <p class="text-muted">Your trusted platform for event tickets</p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <p class="text-muted mb-0">&copy; 2024 EventEase. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Dashboard-specific functionality
+    document.addEventListener('DOMContentLoaded', async function() {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const authService = window.authService;
+      const apiService = window.apiService;
+      const eventService = window.eventService;
+      const utils = window.utils;
+      const eventsModule = window.eventsModule;
+
+      if (!authService || !apiService || !utils) {
+        console.error('Services not available');
+        return;
+      }
+
+      // Update navigation bar
+      if (utils && utils.updateNavigation) {
+        utils.updateNavigation();
+      }
+
+      // Check authentication
+      if (!authService.isAuthenticated()) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Logout buttons
+      const logoutBtn = document.getElementById('logoutBtnNav');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async function() {
+          await authService.logout();
+          window.location.href = 'login.html';
+        });
+      }
+
+      // Load user data
+      try {
+        const user = authService.getUser();
+        if (user) {
+          const userNameElement = document.getElementById('userName');
+          if (userNameElement) {
+            userNameElement.textContent = user.name;
+          }
+        }
+
+        // Load orders
+        try {
+          const ordersResponse = await apiService.get('/api/orders');
+          const ordersContainer = document.getElementById('ordersContainer');
+          if (ordersContainer) {
+            if (ordersResponse.success && ordersResponse.data && ordersResponse.data.length > 0) {
+              const totalSpent = ordersResponse.data.reduce((sum, order) => sum + order.totalAmount, 0);
+              const totalTickets = ordersResponse.data.reduce((sum, order) => sum + (order.tickets?.length || 0), 0);
+              
+              document.getElementById('totalTickets').textContent = totalTickets;
+              document.getElementById('totalSpent').textContent = utils.formatCurrency(totalSpent);
+              
+              ordersContainer.innerHTML = ordersResponse.data.slice(0, 5).map(order => `
+                <div class="mb-3 p-3 border rounded">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <strong>Order #${order._id.slice(-6)}</strong><br>
+                      <small class="text-muted">${utils.formatDate(order.orderDate)}</small>
+                    </div>
+                    <span class="badge bg-${order.status === 'completed' ? 'success' : 'warning'}">${order.status}</span>
+                  </div>
+                  <div class="mt-2">
+                    <strong>${utils.formatCurrency(order.totalAmount)}</strong>
+                    <small class="text-muted"> (${order.tickets?.length || 0} ticket${order.tickets?.length !== 1 ? 's' : ''})</small>
+                  </div>
+                </div>
+              `).join('');
+              
+              if (ordersResponse.data.length > 5) {
+                ordersContainer.innerHTML += `<p class="text-muted text-center small">And ${ordersResponse.data.length - 5} more orders...</p>`;
+              }
+            } else {
+              ordersContainer.innerHTML = '<p class="text-muted text-center">No orders yet. <a href="events.html">Browse events</a> to get started!</p>';
+              document.getElementById('totalTickets').textContent = '0';
+              document.getElementById('totalSpent').textContent = '$0';
+            }
+          }
+        } catch (error) {
+          console.error('Error loading orders:', error);
+          document.getElementById('ordersContainer').innerHTML = '<p class="text-danger">Error loading orders.</p>';
+        }
+
+        // Load listings
+        if (user) {
+          try {
+            const listingsResponse = await apiService.get(`/api/users/${user.id}/listings`);
+            const listingsContainer = document.getElementById('listingsContainer');
+            if (listingsContainer) {
+              if (listingsResponse.success && listingsResponse.data && listingsResponse.data.length > 0) {
+                const activeListings = listingsResponse.data.filter(t => t.status === 'available').length;
+                document.getElementById('totalListings').textContent = activeListings;
+                
+                listingsContainer.innerHTML = listingsResponse.data.slice(0, 5).map(ticket => `
+                  <div class="mb-3 p-3 border rounded">
+                    <strong>${ticket.eventId?.name || 'Event'}</strong><br>
+                    <small class="text-muted">Section ${ticket.section}${ticket.row ? `, Row ${ticket.row}` : ''}${ticket.seat ? `, Seat ${ticket.seat}` : ''}</small><br>
+                    <span class="badge bg-${ticket.status === 'available' ? 'success' : 'secondary'}">${ticket.status}</span>
+                    <div class="mt-2"><strong>${utils.formatCurrency(ticket.price)}</strong></div>
+                  </div>
+                `).join('');
+                
+                if (listingsResponse.data.length > 5) {
+                  listingsContainer.innerHTML += `<p class="text-muted text-center small">And ${listingsResponse.data.length - 5} more listings...</p>`;
+                }
+              } else {
+                listingsContainer.innerHTML = '<p class="text-muted text-center">No listings yet. <a href="events.html">Browse events</a> to start selling!</p>';
+                document.getElementById('totalListings').textContent = '0';
+              }
+            }
+          } catch (error) {
+            console.error('Error loading listings:', error);
+            document.getElementById('listingsContainer').innerHTML = '<p class="text-danger">Error loading listings.</p>';
+          }
+        }
+
+        // Load featured events
+        if (eventService && eventsModule) {
+          try {
+            const eventsResponse = await eventService.getEvents({ limit: 6 });
+            const eventsContainer = document.getElementById('eventsContainer');
+            if (eventsContainer && eventsResponse.success && eventsResponse.data && eventsResponse.data.length > 0) {
+              eventsModule.displayEvents(eventsResponse.data, eventsContainer, utils);
+            } else if (eventsContainer) {
+              eventsContainer.innerHTML = '<p class="text-muted text-center">No events available at this time.</p>';
+            }
+          } catch (error) {
+            console.error('Error loading events:', error);
+            const eventsContainer = document.getElementById('eventsContainer');
+            if (eventsContainer) {
+              eventsContainer.innerHTML = '<p class="text-danger text-center">Error loading events. Please try again later.</p>';
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      }
+    });
+  </script>
 </body>
 </html>

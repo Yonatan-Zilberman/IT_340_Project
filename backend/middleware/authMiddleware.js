@@ -1,27 +1,70 @@
-// backend/middleware/authMiddleware.js
-const jwt = require('jsonwebtoken');
+/**
+ * Authentication Middleware
+ * Verify JWT token and attach user to request
+ */
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me';
+const User = require('../models/User');
+const { verifyAccessToken } = require('../utils/jwtUtils');
+const { AppError } = require('./errorHandler');
+const { ERROR_MESSAGES } = require('../utils/constants');
 
-function authRequired(req, res, next) {
-  const authHeader = req.headers.authorization || '';
-
-  if (!authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Authorization token missing.' });
-  }
-
-  const token = authHeader.substring(7); // remove 'Bearer '
-
+/**
+ * Middleware to verify JWT token and attach user to request
+ */
+async function authenticate(req, res, next) {
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    // store user id on request for later use
-    req.userId = payload.sub;
+    // Get token from header
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+      return next(new AppError(ERROR_MESSAGES.UNAUTHORIZED, 401));
+    }
+
+    // Verify token
+    let decoded;
+    try {
+      decoded = verifyAccessToken(token);
+    } catch (err) {
+      return next(new AppError(ERROR_MESSAGES.UNAUTHORIZED, 401));
+    }
+
+    // Get user from token
+    const user = await User.findById(decoded.userId).select('-passwordHash');
+    if (!user) {
+      return next(new AppError(ERROR_MESSAGES.USER_NOT_FOUND, 404));
+    }
+
+    // Attach user to request
+    req.user = user;
     next();
   } catch (err) {
-    console.error('JWT verify error:', err.message);
-    return res.status(401).json({ message: 'Invalid or expired token.' });
+    next(err);
   }
 }
 
-module.exports = authRequired;
+/**
+ * Middleware to check if user has required role
+ * @param {...string} roles - Allowed roles
+ */
+function authorize(...roles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return next(new AppError(ERROR_MESSAGES.UNAUTHORIZED, 401));
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError(ERROR_MESSAGES.FORBIDDEN, 403));
+    }
+
+    next();
+  };
+}
+
+module.exports = {
+  authenticate,
+  authorize
+};
 

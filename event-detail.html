@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Details - EventEase</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="bi bi-ticket-perforated"></i> EventEase
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <!-- Navigation items will be dynamically updated by updateNavigation() -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Event Detail Section -->
+    <section class="pt-3 pb-5" style="margin-top: 76px;">
+        <div class="container">
+            <div id="loadingContainer" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading event details...</span>
+                </div>
+            </div>
+
+            <div id="errorContainer" class="alert alert-danger d-none" role="alert">
+                <h4 class="alert-heading">Error Loading Event</h4>
+                <p id="errorMessage"></p>
+                <hr>
+                <a href="events.html" class="btn btn-primary">Back to Events</a>
+            </div>
+
+            <div id="eventDetailContainer" class="d-none">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <a href="events.html" class="btn btn-outline-secondary mb-3">
+                            <i class="bi bi-arrow-left"></i> Back to Events
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-body">
+                                <div class="text-center mb-4">
+                                    <i id="eventCategoryIcon" class="bi event-icon" style="font-size: 4rem;"></i>
+                                </div>
+                                <h1 id="eventName" class="display-5 mb-3"></h1>
+                                <p id="eventDescription" class="lead text-muted"></p>
+                                
+                                <hr>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <h6><i class="bi bi-calendar"></i> Date</h6>
+                                        <p id="eventDate" class="text-muted"></p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h6><i class="bi bi-clock"></i> Time</h6>
+                                        <p id="eventTime" class="text-muted"></p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h6><i class="bi bi-geo-alt"></i> Venue</h6>
+                                        <p id="eventVenue" class="text-muted"></p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h6><i class="bi bi-tag"></i> Category</h6>
+                                        <p id="eventCategory" class="text-muted"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-ticket"></i> Available Tickets</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="ticketsContainer">
+                                    <p class="text-muted">Loading tickets...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-ticket-perforated"></i> EventEase</h5>
+                    <p class="text-muted">Your trusted platform for event tickets</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="text-muted mb-0">&copy; 2024 EventEase. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS - Load in order -->
+    <script src="js/config.js"></script>
+    <script src="js/services/apiService.js"></script>
+    <script src="js/services/authService.js"></script>
+    <script src="js/services/eventService.js"></script>
+    <script src="js/services/ticketService.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Event detail page functionality
+        document.addEventListener('DOMContentLoaded', async function() {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const eventService = window.eventService;
+            const ticketService = window.ticketService;
+            const utils = window.utils;
+            
+            if (!eventService || !ticketService || !utils) {
+                showError('Services not available. Please refresh the page.');
+                return;
+            }
+
+            // Get event ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('id');
+
+            if (!eventId) {
+                showError('No event ID provided.');
+                return;
+            }
+
+            // Load event details
+            try {
+                const eventResponse = await eventService.getEvent(eventId);
+                
+                if (eventResponse.success && eventResponse.data) {
+                    displayEventDetails(eventResponse.data, utils);
+                    
+                    // Load tickets for this event
+                    try {
+                        const ticketsResponse = await ticketService.getTickets({ eventId: eventId });
+                        if (ticketsResponse.success && ticketsResponse.data) {
+                            displayTickets(ticketsResponse.data, utils);
+                        } else {
+                            document.getElementById('ticketsContainer').innerHTML = 
+                                '<p class="text-muted">No tickets available for this event.</p>';
+                        }
+                    } catch (ticketError) {
+                        console.error('Error loading tickets:', ticketError);
+                        document.getElementById('ticketsContainer').innerHTML = 
+                            '<p class="text-danger">Error loading tickets. Please try again later.</p>';
+                    }
+                } else {
+                    showError('Event not found.');
+                }
+            } catch (error) {
+                console.error('Error loading event:', error);
+                let errorMsg = 'Error loading event. Please try again later.';
+                if (error.message) {
+                    errorMsg = error.message;
+                }
+                showError(errorMsg);
+            }
+        });
+
+        function displayEventDetails(event, utils) {
+            const container = document.getElementById('eventDetailContainer');
+            const loading = document.getElementById('loadingContainer');
+            
+            loading.classList.add('d-none');
+            container.classList.remove('d-none');
+
+            // Set event details
+            document.getElementById('eventName').textContent = event.name;
+            document.getElementById('eventDescription').textContent = event.description || 'No description available.';
+            document.getElementById('eventDate').textContent = utils.formatDate(event.date);
+            document.getElementById('eventTime').textContent = utils.formatTime(event.time);
+            document.getElementById('eventVenue').textContent = event.venue;
+            document.getElementById('eventCategory').textContent = event.category.charAt(0).toUpperCase() + event.category.slice(1);
+
+            // Set category icon
+            const iconMap = {
+                concert: 'bi-music-note-beamed',
+                sports: 'bi-trophy',
+                theater: 'bi-camera-reels'
+            };
+            const icon = document.getElementById('eventCategoryIcon');
+            icon.className = `bi ${iconMap[event.category] || 'bi-ticket-perforated'} event-icon`;
+        }
+
+        function displayTickets(tickets, utils) {
+            const container = document.getElementById('ticketsContainer');
+            
+            if (!tickets || tickets.length === 0) {
+                container.innerHTML = '<p class="text-muted">No tickets available for this event.</p>';
+                return;
+            }
+
+            const ticketsHTML = tickets.slice(0, 10).map(ticket => {
+                return `
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>Section ${ticket.section}</strong>
+                                ${ticket.row ? `<br><small class="text-muted">Row ${ticket.row}, Seat ${ticket.seat}</small>` : ''}
+                            </div>
+                            <div class="text-end">
+                                <strong class="text-primary">${utils.formatCurrency(ticket.price)}</strong>
+                            </div>
+                        </div>
+                        ${window.authService && window.authService.isAuthenticated() 
+                            ? `<button class="btn btn-primary btn-sm w-100" onclick="purchaseTicket('${ticket._id}')">Purchase</button>`
+                            : `<a href="login.html" class="btn btn-outline-primary btn-sm w-100">Login to Purchase</a>`
+                        }
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = ticketsHTML;
+        }
+
+        async function purchaseTicket(ticketId) {
+            if (!window.authService || !window.authService.isAuthenticated()) {
+                alert('Please log in to purchase tickets.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (!confirm('Are you sure you want to purchase this ticket?')) {
+                return;
+            }
+
+            try {
+                const ticketService = window.ticketService;
+                const response = await ticketService.purchaseTicket(ticketId);
+                
+                if (response.success) {
+                    alert('Ticket purchased successfully! Redirecting to dashboard...');
+                    window.location.href = 'dashboard.html';
+                } else {
+                    throw new Error(response.error || 'Purchase failed');
+                }
+            } catch (error) {
+                let errorMsg = 'Error purchasing ticket. Please try again.';
+                if (error.message) {
+                    errorMsg = error.message;
+                }
+                alert(errorMsg);
+            }
+        }
+
+        function showError(message) {
+            const loading = document.getElementById('loadingContainer');
+            const error = document.getElementById('errorContainer');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            loading.classList.add('d-none');
+            error.classList.remove('d-none');
+            errorMsg.textContent = message;
+        }
+    </script>
+</body>
+</html>
+
